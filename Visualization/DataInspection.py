@@ -1,6 +1,7 @@
 import os
 from path import Path
 
+path = Path("ModelNet10/ModelNet10")
 
 def inspectDataSize(path):
     print("Data at: ",path)
@@ -9,3 +10,4 @@ def inspectDataSize(path):
     classes = {folder: i for i, folder in enumerate(folders)}
     print("Classes: \n", classes)
 
+# inspectDataSize(path)

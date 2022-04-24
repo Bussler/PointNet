@@ -2,7 +2,7 @@ import os
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-
+from path import Path
 
 
 def read_off(file): # function to read file containing 3D data of vertices
@@ -63,3 +63,4 @@ def pcshow(xs,ys,zs):
                       color='DarkSlateGrey')),
                       selector=dict(mode='markers'))
     fig.show()
+
