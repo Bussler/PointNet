@@ -2,6 +2,7 @@ import numpy as np
 import math
 import random
 from torchvision import transforms
+import torch
 
 
 # Uniformly sample points from surface, but factor in choosing a face proportional to it's area.
@@ -89,18 +90,25 @@ class RandomNoise(object):
     
         noisy_pointcloud = pointcloud + noise
         return  noisy_pointcloud
-    
+
+
+class ToTensor(object):
+    def __call__(self, pointcloud):
+        assert len(pointcloud.shape)==2
+
+        return torch.from_numpy(pointcloud)
+
 train_transforms = transforms.Compose([
                     PointSampler(1024),
                     Normalize(),
                     RandRotation_z(),
                     RandomNoise(),
-                    transforms.ToTensor()
+                    ToTensor()
                     ])
 
 def default_transforms():
     return transforms.Compose([
                                 PointSampler(1024),
                                 Normalize(),
-                                transforms.ToTensor()
+                                ToTensor()
                               ])

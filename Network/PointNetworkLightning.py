@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
+import pytorch_lightning as pl
 
 
 class Tnet(nn.Module):
@@ -73,9 +74,13 @@ class TransformNetwork(nn.Module):
         return output, matrix3x3, matrix64x64
 
 
-class PointNet(nn.Module):
+
+class PointNet(pl.LightningModule): # TODO solve dimensionality issues
     def __init__(self, classes = 10):
         super().__init__()
+        self.total = 0
+        self.correct = 0
+
         self.transform = TransformNetwork()
         self.fc1 = nn.Linear(1024, 512)
         self.fc2 = nn.Linear(512, 256)
@@ -94,15 +99,48 @@ class PointNet(nn.Module):
         output = self.fc3(xb)
         return self.logsoftmax(output), matrix3x3, matrix64x64
 
-        
-def pointnetloss(outputs, labels, m3x3, m64x64, alpha = 0.0001):
-    criterion = torch.nn.NLLLoss()
-    bs=outputs.size(0)
-    id3x3 = torch.eye(3, requires_grad=True).repeat(bs,1,1)
-    id64x64 = torch.eye(64, requires_grad=True).repeat(bs,1,1)
-    if outputs.is_cuda:
-        id3x3=id3x3.cuda()
-        id64x64=id64x64.cuda()
-    diff3x3 = id3x3-torch.bmm(m3x3,m3x3.transpose(1,2))
-    diff64x64 = id64x64-torch.bmm(m64x64,m64x64.transpose(1,2))
-    return criterion(outputs, labels) + alpha * (torch.norm(diff3x3)+torch.norm(diff64x64)) / float(bs)
+    def training_step(self, batch, batch_idx):
+        inputs, labels = batch['pointcloud'], batch['category']
+        outputs, m3x3, m64x64 = self.forward(inputs.transpose(1,2))
+
+        loss = self.pointnetloss(outputs, labels, m3x3, m64x64)
+
+        # Logging to TensorBoard by default
+        self.log("train_loss", loss)
+
+        return {'loss': loss}
+
+    def validation_step(self, batch, batch_idx):
+        inputs, labels = batch['pointcloud'], batch['category']
+        outputs, m3x3, m64x64 = self.forward(inputs.transpose(1,2))
+
+        loss = self.pointnetloss(outputs, labels, m3x3, m64x64)
+        _, predicted = torch.max(outputs.data, 1)
+
+        self.total += labels.size(0)
+        self.correct += (predicted == labels).sum().item()
+
+        return {'val_loss': loss}
+
+    def validation_epoch_end(self, outputs):
+        val_acc = 100. * self.correct / self.total
+        print('Valid accuracy: %d %%' % val_acc)
+        self.correct = 0
+        self.total = 0
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    def pointnetloss(outputs, labels, m3x3, m64x64, alpha = 0.0001):
+        criterion = torch.nn.NLLLoss()
+        bs=outputs.size(0)
+        id3x3 = torch.eye(3, requires_grad=True).repeat(bs,1,1)
+        id64x64 = torch.eye(64, requires_grad=True).repeat(bs,1,1)
+        if outputs.is_cuda:
+            id3x3=id3x3.cuda()
+            id64x64=id64x64.cuda()
+        diff3x3 = id3x3-torch.bmm(m3x3,m3x3.transpose(1,2))
+        diff64x64 = id64x64-torch.bmm(m64x64,m64x64.transpose(1,2))
+        return criterion(outputs, labels) + alpha * (torch.norm(diff3x3)+torch.norm(diff64x64)) / float(bs)
+
+
