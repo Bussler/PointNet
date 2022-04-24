@@ -4,9 +4,6 @@ import numpy as np
 from Visualization.PlotlyVisualization import read_off, visualize_rotate, pcshow
 from Network.DataTransforms import PointSampler
 
-#import sys
-#sys.path.append('C:\github\PointNet')
-
 
 path = Path("ModelNet10/ModelNet10") # put in Path to dataset root dir here
 
