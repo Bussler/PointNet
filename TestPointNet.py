@@ -22,24 +22,26 @@ checkpoint = "./lightning_logs/version_6/checkpoints/epoch=0.ckpt"
 pointnet = PointNet.load_from_checkpoint(checkpoint)
 pointnet.eval()
 
-all_preds = []
-all_labels = []
-with torch.no_grad():
-    for i, data in enumerate(valid_loader):
-        print('Batch [%4d / %4d]' % (i+1, len(valid_loader)))
-                   
-        inputs, labels = data['pointcloud'].float(), data['category']
-        outputs, __, __ = pointnet(inputs.transpose(1,2))
-        _, preds = torch.max(outputs.data, 1)
-        all_preds += list(preds.numpy())
-        all_labels += list(labels.numpy())
+def get_all_preds(model, loader):    
+    all_preds = []
+    all_labels = []
+    with torch.no_grad():
+        for i, data in enumerate(loader):
+            print('Batch [%4d / %4d]' % (i+1, len(valid_loader)))
+                    
+            inputs, labels = data['pointcloud'].float(), data['category']
+            outputs, __, __ = model(inputs.transpose(1,2))
+            _, preds = torch.max(outputs.data, 1)
+            all_preds += list(preds.numpy())
+            all_labels += list(labels.numpy())
+    return all_preds, all_labels
 
+all_preds, all_labels = get_all_preds(pointnet, valid_loader)
 
 cm = confusion_matrix(all_labels, all_preds)
-print(cm)
 
 folders = [dir for dir in sorted(os.listdir(path)) if os.path.isdir(path/dir)]
 classes = {folder: i for i, folder in enumerate(folders)}
 
-plt.figure(figsize=(8,8))
+plt.figure(figsize=(10,10))
 plot_confusion_matrix(cm, list(classes.keys()), normalize=True)

@@ -10,6 +10,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     else:
         print('Confusion matrix, without normalization')
 
+    print(cm)
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
