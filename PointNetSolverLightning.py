@@ -19,3 +19,5 @@ pointnet = PointNet()
 
 trainer = pl.Trainer(max_epochs=1, gpus = 1 if torch.cuda.is_available() else None)
 trainer.fit(pointnet,train_dataloader=train_loader, val_dataloaders=valid_loader)
+
+print("Finished Training")
