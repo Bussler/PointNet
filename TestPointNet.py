@@ -43,5 +43,5 @@ cm = confusion_matrix(all_labels, all_preds)
 folders = [dir for dir in sorted(os.listdir(path)) if os.path.isdir(path/dir)]
 classes = {folder: i for i, folder in enumerate(folders)}
 
-plt.figure(figsize=(10,10))
+plt.figure(figsize=(8,8))
 plot_confusion_matrix(cm, list(classes.keys()), normalize=True)
